@@ -32,4 +32,6 @@
 *.app
 
 build_files/
-utils/data
+include/data
+tests/test_model
+data

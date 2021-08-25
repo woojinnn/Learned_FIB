@@ -57,7 +57,7 @@ void PWL<KeyType>::train(const std::string& path, double threshold) {
         a = static_cast<double>(r - l) / static_cast<double>(dataset[r] - dataset[l]);
         b = l - a * static_cast<double>(dataset[l]);
 
-        // Examine the error between x_(l+1) and x_(r-1)
+        // Examine the error from x_(l+1) to x_(r-1)
         for (uint64_t i = l + 1; i < r; ++i) {
             p = a * static_cast<double>(dataset[i]) + b;  // compute the y-value on the line for the x-value of x_i
             double err = p > i ? p - static_cast<double>(i) : static_cast<double>(i) - p;

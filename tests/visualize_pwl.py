@@ -4,23 +4,22 @@ import struct
 
 # dataset
 dataset = []
-with open("data/dataset", "rb") as f:
-    f.seek(0, 2)
-    size = f.tell()
-    f.seek(0, 0)
-    for _ in range(int(size/4)): # sizeof(uint32_t) = 4
+with open("../data/dna_uint32", "rb") as f:
+    # f.seek(0, 2)    # to end
+    # size = f.tell()
+    # f.seek(0, 0)
+    size = struct.unpack("Q", f.read(8))   # dna_uint32: read size
+    for _ in range(size[0]): # sizeof(uint32_t) = 4
         dataset.append(struct.unpack("I", f.read(4)))
-
-for i in range(len(dataset)):
-    dataset[i] = dataset[i][0]
 
 # indexes
 indexes = range(len(dataset))
 
+
 # boundary_x, boundary_y
 boundary_x = []
 boundary_y = []
-with open("data/boundaries", "rb") as f:
+with open("../include/data/boundaries", "rb") as f:
     f.seek(0, 2)
     size = f.tell()
     f.seek(0, 0)
@@ -30,11 +29,6 @@ with open("data/boundaries", "rb") as f:
 for i in range(len(boundary_y)):
     boundary_x[i] = boundary_x[i][0]
     boundary_y[i] = boundary_y[i][0]
-
-# # boundary_x
-# print(dataset)
-# print(boundary_y)
-# boundary_x = [dataset[i] for i in boundary_y]
 
 plt.plot(dataset, indexes, 'b')
 plt.plot(boundary_x, boundary_y, 'ro--', marker="x")

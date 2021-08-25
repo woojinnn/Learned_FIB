@@ -25,6 +25,9 @@ class NN {
     void train(const typename std::vector<std::pair<KeyType, uint64_t>>::iterator boundaries_begin,
                const typename std::vector<std::pair<KeyType, uint64_t>>::iterator boundaries_end);
     double inference(KeyType key);
+
+    void load(const std::string &path);
+    void save(const std::string &path);
     ~NN();
 };
 
@@ -40,13 +43,12 @@ void NN<KeyType>::train(const typename std::vector<std::pair<KeyType, uint64_t>>
 
     auto tmp = boundaries_begin;
     double prev_slope = 0, cur_slope;
-    for (uint32_t i = 0; i < numNeurons; ++i) {
+    for (uint32_t i = 0; i < numNeurons; ++i, ++tmp) {
         cur_slope = static_cast<double>((*(tmp + 1)).second - (*tmp).second) / static_cast<double>((*(tmp + 1)).first - (*tmp).first);
         weights1[i] = std::abs(cur_slope - prev_slope);
         biases1[i] = -(weights1[i] * (*tmp).first);
         weights2[i] = cur_slope > prev_slope ? 1 : -1;
         prev_slope = cur_slope;
-        tmp++;
     }
 }
 
@@ -82,6 +84,40 @@ double NN<KeyType>::inference(KeyType key) {
     }
 
     return result + bias2;
+}
+
+template <typename KeyType>
+void NN<KeyType>::load(const std::string &path) {
+    std::ifstream is(path, std::ios::binary);
+    if (is.is_open()) {
+        is.read(reinterpret_cast<char *>(&numNeurons), sizeof(uint32_t));
+
+        weights1 = (double *)aligned_alloc(32, numNeurons * sizeof(double));
+        weights2 = (double *)aligned_alloc(32, numNeurons * sizeof(double));
+        biases1 = (double *)aligned_alloc(32, numNeurons * sizeof(double));
+
+        is.read(reinterpret_cast<char *>(weights1), numNeurons * sizeof(double));
+        is.read(reinterpret_cast<char *>(biases1), numNeurons * sizeof(double));
+        is.read(reinterpret_cast<char *>(weights2), numNeurons * sizeof(double));
+        
+        is.read(reinterpret_cast<char *>(&bias2), sizeof(double));
+    }
+    is.close();
+}
+
+template <typename KeyType>
+void NN<KeyType>::save(const std::string &path) {
+    std::ofstream os(path, std::ios::binary);
+    if (os.is_open()) {
+        os.write(reinterpret_cast<char *>(&numNeurons), sizeof(uint32_t));
+
+        os.write(reinterpret_cast<char *>(weights1), numNeurons * sizeof(double));
+        os.write(reinterpret_cast<char *>(biases1), numNeurons * sizeof(double));
+        os.write(reinterpret_cast<char *>(weights2), numNeurons * sizeof(double));
+
+        os.write(reinterpret_cast<char *>(&bias2), sizeof(double));
+    }
+    os.close();
 }
 
 template <typename KeyType>

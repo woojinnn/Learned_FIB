@@ -1,4 +1,4 @@
-#include "../utils/NN.h"
+#include "../include/NN.h"
 
 int main() {
     std::vector<std::pair<uint32_t, uint64_t>> points;
