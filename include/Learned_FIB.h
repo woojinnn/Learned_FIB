@@ -74,7 +74,7 @@ void Learned_FIB<KeyType>::derive_boundaries() {
         // Examine the error between x_(l+1) and x_(r-1)
         for (uint64_t i = l + 1; i < r; ++i) {
             p = a * static_cast<double>(dataset[i]) + b;  // compute the y-value on the line for the x-value of x_i
-            double err = p > i ? p - static_cast<double>(i) : static_cast<double>(i) - p;
+            double err = p > static_cast<double>(i) ? p - static_cast<double>(i) : static_cast<double>(i) - p;
             if (err >= error_threshold) {
                 // The error is geq than the error_threshold
                 // Append (x_(r-1), r-1) to B
