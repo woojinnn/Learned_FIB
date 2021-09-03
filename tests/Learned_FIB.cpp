@@ -36,8 +36,9 @@ int main() {
     std::string data_path = "../data/dna_uint32";
 
     Learned_FIB<uint32_t> lf;
-    // lf.train(data_path, 500);
-    lf.load("./test_model/nn_trained");
+    lf.train(data_path, 254);
+    // lf.load("./test_model/branching/8/nn_trained");
 
     validate_model(data_path, lf);
+    lf.save("./test_model/branching/8/nn_trained");
 }
