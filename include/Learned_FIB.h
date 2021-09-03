@@ -10,11 +10,14 @@
 #include "NN.h"
 #include "PWL.h"
 
+#define CALCULATE_PREFIX(x) (x >> (32 - 4))
+
 template <typename KeyType>
 class Learned_FIB {
    private:
     std::vector<KeyType> dataset;
     std::vector<std::pair<KeyType, uint64_t>> boundaries;
+    std::vector<uint64_t> branching_points;
     std::vector<std::unique_ptr<NN<KeyType>>> NeuralNetworks;
 
     void load_dataset(const std::string& path);
@@ -55,6 +58,7 @@ void Learned_FIB<KeyType>::derive_boundaries() {
 
     // B <- {(x_0, 0)}
     boundaries.push_back(std::make_pair(dataset[0], 0));
+    branching_points.push_back(static_cast<uint64_t>(0));
 
     // l, r: left and right boundary of a line segment
     uint64_t l = 0, r = 2;
@@ -64,6 +68,15 @@ void Learned_FIB<KeyType>::derive_boundaries() {
                 r++;
             }
             r++;
+            continue;
+        }
+
+        // when datum's prefix becomes different, append it to boundaries and branching_points
+        if (CALCULATE_PREFIX(dataset[r]) != CALCULATE_PREFIX(dataset[l])) {
+            boundaries.push_back(std::make_pair(dataset[r - 1], r - 1));
+            branching_points.push_back(boundaries.size() - 1);
+            l = r;
+            r += 2;
             continue;
         }
 
@@ -89,6 +102,8 @@ void Learned_FIB<KeyType>::derive_boundaries() {
 
     if (dataset[dataset.size() - 1] != boundaries[boundaries.size() - 1].first)
         boundaries.push_back(std::make_pair(dataset[dataset.size() - 1], dataset.size() - 1));  // last point
+
+    branching_points.push_back(boundaries.size() - 1);
 }
 
 template <typename KeyType>
@@ -97,34 +112,41 @@ void Learned_FIB<KeyType>::train(const std::string& path, double threshold) {
     load_dataset(path);
 
     // 1 for double-uint64_t rounding-up issue
-    error_threshold = static_cast<uint64_t>(std::abs(threshold)) + 1;
+    error_threshold = static_cast<uint64_t>(std::abs(threshold));
 
     // make PWL function
     derive_boundaries();
 
-    std::unique_ptr<NN<KeyType>> nn(new NN<KeyType>());
-    NeuralNetworks.push_back(std::move(nn));
+    for (uint32_t i = 0; i < pow(2, 4); ++i) {
+        std::unique_ptr<NN<KeyType>> nn(new NN<KeyType>());
+        NeuralNetworks.push_back(std::move(nn));
+    }
 
     // train NN using boundaries
-    NeuralNetworks[0]->train(boundaries.begin(), boundaries.end());
+    for (uint32_t i = 0; i < branching_points.size() - 1; ++i) {
+        NeuralNetworks[i]->train(boundaries.begin() + branching_points[i], boundaries.begin() + branching_points[i + 1]);
+    }
 }
 
 template <typename KeyType>
 uint64_t Learned_FIB<KeyType>::find(KeyType key) {
-    return static_cast<uint64_t>(NeuralNetworks[0]->inference(key));
+    return static_cast<uint64_t>(NeuralNetworks[CALCULATE_PREFIX(key)]->inference(key));
 }
 
 template <typename KeyType>
 void Learned_FIB<KeyType>::save(const std::string& path) {
-    NeuralNetworks[0]->save(path);
+    for (uint32_t i = 0; i < pow(2, 4); ++i) {
+        NeuralNetworks[i]->save(path + "_" + std::to_string(i));
+    }
 }
 
 template <typename KeyType>
 void Learned_FIB<KeyType>::load(const std::string& path) {
-    std::unique_ptr<NN<KeyType>> nn(new NN<KeyType>());
-    NeuralNetworks.push_back(std::move(nn));
-
-    NeuralNetworks[0]->load(path);
+    for (uint32_t i = 0; i < pow(2, 4); ++i) {
+        std::unique_ptr<NN<KeyType>> nn(new NN<KeyType>());
+        NeuralNetworks.push_back(std::move(nn));
+        NeuralNetworks[i]->load(path + "_" + std::to_string(i));
+    }
 }
 
 #endif  // LEARNED_FIB_H
