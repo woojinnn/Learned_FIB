@@ -11,23 +11,25 @@
 #include "NN.h"
 #include "PWL.h"
 
-#define CALCULATE_PREFIX(x) (x >> (32 - 8))
+#define PREFIX 16
+#define CALCULATE_PREFIX(x) (x >> (64 - PREFIX))
 
 template <typename KeyType>
 class Learned_FIB {
    private:
-    std::array<std::vector<KeyType>, (size_t)pow(2, 8)> splitted_dataset;
+    std::array<std::vector<KeyType>, (size_t)pow(2, PREFIX)> splitted_dataset;
 
-    std::array<std::vector<std::pair<KeyType, uint64_t>>, (size_t)pow(2, 8)> boundaries;
+    std::array<std::vector<std::pair<KeyType, uint64_t>>, (size_t)pow(2, PREFIX)> boundaries;
     std::vector<uint64_t> starting_points;
 
     std::vector<std::unique_ptr<NN<KeyType>>> NeuralNetworks;
 
     void load_dataset(const std::string& path);
-    void derive_boundaries(uint32_t model_idx);
+    void derive_boundaries(uint64_t model_idx);
     uint64_t error_threshold;
 
    public:
+    Learned_FIB(){};
     void train(const std::string& path, double threshold);
     uint64_t get_error_threshold() { return error_threshold; }
     uint64_t find(KeyType key);
@@ -62,7 +64,7 @@ void Learned_FIB<KeyType>::load_dataset(const std::string& path) {
 }
 
 template <typename KeyType>
-void Learned_FIB<KeyType>::derive_boundaries(uint32_t model_idx) {
+void Learned_FIB<KeyType>::derive_boundaries(uint64_t model_idx) {
     double a, b;    // variable for slope and bias
     double p, err;  // variable for error calculation
 
@@ -113,7 +115,7 @@ void Learned_FIB<KeyType>::train(const std::string& path, double threshold) {
     // 1 for double-uint64_t rounding-up issue
     error_threshold = static_cast<uint64_t>(std::abs(threshold));
 
-    for (uint32_t model_idx = 0; model_idx < pow(2, 8); ++model_idx) {
+    for (uint64_t model_idx = 0; model_idx < (size_t)pow(2, PREFIX); ++model_idx) {
         // make PWL function
         derive_boundaries(model_idx);
 
@@ -132,14 +134,14 @@ uint64_t Learned_FIB<KeyType>::find(KeyType key) {
 
 template <typename KeyType>
 void Learned_FIB<KeyType>::save(const std::string& path) {
-    for (uint32_t i = 0; i < pow(2, 8); ++i) {
+    for (uint64_t i = 0; i < (size_t)pow(2, PREFIX); ++i) {
         NeuralNetworks[i]->save(path + "_" + std::to_string(i));
     }
 }
 
 template <typename KeyType>
 void Learned_FIB<KeyType>::load(const std::string& path) {
-    for (uint32_t i = 0; i < pow(2, 8); ++i) {
+    for (uint64_t i = 0; i < (size_t)pow(2, PREFIX); ++i) {
         std::unique_ptr<NN<KeyType>> nn(new NN<KeyType>());
         NeuralNetworks.push_back(std::move(nn));
         NeuralNetworks[i]->load(path + "_" + std::to_string(i));
