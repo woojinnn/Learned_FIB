@@ -99,10 +99,13 @@ void NN<KeyType>::load(const std::string &path) {
         is.read(reinterpret_cast<char *>(weights1), numNeurons * sizeof(double));
         is.read(reinterpret_cast<char *>(biases1), numNeurons * sizeof(double));
         is.read(reinterpret_cast<char *>(weights2), numNeurons * sizeof(double));
-        
+
         is.read(reinterpret_cast<char *>(&bias2), sizeof(double));
+        is.close();
+    } else {
+        std::cerr << "[NN.h save] Cannot open " + path << std::endl;
+        exit(EXIT_FAILURE);
     }
-    is.close();
 }
 
 template <typename KeyType>
@@ -116,8 +119,11 @@ void NN<KeyType>::save(const std::string &path) {
         os.write(reinterpret_cast<char *>(weights2), numNeurons * sizeof(double));
 
         os.write(reinterpret_cast<char *>(&bias2), sizeof(double));
+        os.close();
+    } else {
+        std::cerr << "[NN.h save] Cannot open " + path << std::endl;
+        exit(EXIT_FAILURE);
     }
-    os.close();
 }
 
 template <typename KeyType>
